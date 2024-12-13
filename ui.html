@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Message Exchange</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+        }
+        h1 {
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .message {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Secure Message Exchange</h1>
+
+        <!-- Registration Form -->
+        <div class="form-group">
+            <h2>Register</h2>
+            <label for="register-username">Username:</label>
+            <input type="text" id="register-username" placeholder="Enter username">
+            <label for="register-password">Password:</label>
+            <input type="password" id="register-password" placeholder="Enter password">
+            <button onclick="registerUser()">Register</button>
+        </div>
+
+        <!-- Send Message Form -->
+        <div class="form-group">
+            <h2>Send Message</h2>
+            <label for="send-sender">Sender Username:</label>
+            <input type="text" id="send-sender" placeholder="Your username">
+            <label for="send-recipient">Recipient Username:</label>
+            <input type="text" id="send-recipient" placeholder="Recipient username">
+            <label for="send-message">Message:</label>
+            <textarea id="send-message" placeholder="Enter your message"></textarea>
+            <button onclick="sendMessage()">Send Message</button>
+        </div>
+
+        <!-- Retrieve Messages -->
+        <div class="form-group">
+            <h2>Retrieve Messages</h2>
+            <label for="retrieve-username">Your Username:</label>
+            <input type="text" id="retrieve-username" placeholder="Enter username">
+            <button onclick="retrieveMessages()">Retrieve Messages</button>
+            <div id="messages"></div>
+        </div>
+
+        <!-- Decrypt Message Form -->
+        <div class="form-group">
+            <h2>Decrypt Message</h2>
+            <label for="decrypt-username">Your Username:</label>
+            <input type="text" id="decrypt-username" placeholder="Enter username">
+            <label for="decrypt-encrypted-message">Encrypted Message:</label>
+            <textarea id="decrypt-encrypted-message" placeholder="Paste encrypted message"></textarea>
+            <label for="decrypt-signature">Signature:</label>
+            <textarea id="decrypt-signature" placeholder="Paste signature"></textarea>
+            <label for="decrypt-sender-key">Sender Public Key:</label>
+            <textarea id="decrypt-sender-key" placeholder="Paste sender's public key"></textarea>
+            <button onclick="decryptMessage()">Decrypt Message</button>
+            <div id="decrypted-message"></div>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:8000';
+
+        async function registerUser() {
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+
+            const response = await fetch(`${apiUrl}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+            alert(data.message || data.error);
+        }
+
+        async function sendMessage() {
+            const sender = document.getElementById('send-sender').value;
+            const recipient = document.getElementById('send-recipient').value;
+            const message = document.getElementById('send-message').value;
+
+            const response = await fetch(`${apiUrl}/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sender, recipient, message })
+            });
+
+            const data = await response.json();
+            alert(data.message || data.error);
+        }
+
+        async function retrieveMessages() {
+            const username = document.getElementById('retrieve-username').value;
+
+            const response = await fetch(`${apiUrl}/messages/${username}`);
+            const data = await response.json();
+
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = '';
+
+            data.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.innerHTML = `
+                    <p><strong>Sender:</strong> ${msg.sender}</p>
+                    <p><strong>Encrypted Message:</strong> ${msg.encrypted_message}</p>
+                    <p><strong>Signature:</strong> ${msg.signature}</p>
+                `;
+                messagesDiv.appendChild(messageElement);
+            });
+        }
+
+        async function decryptMessage() {
+    const username = document.getElementById('decrypt-username').value;
+    const encryptedMessage = document.getElementById('decrypt-encrypted-message').value;
+    const signature = document.getElementById('decrypt-signature').value;
+    const senderPublicKey = document.getElementById('decrypt-sender-key').value;
+
+    const response = await fetch(`${apiUrl}/decrypt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username,
+            encrypted_message: encryptedMessage,
+            signature,
+            sender_public_key: senderPublicKey
+        })
+    });
+
+    const data = await response.json();
+    const decryptedMessageDiv = document.getElementById('decrypted-message');
+
+    if (data.message) {
+        decryptedMessageDiv.textContent = `Decrypted Message: ${data.message}`;
+    } else {
+        decryptedMessageDiv.textContent = `Error: ${data.detail}`;
+    }
+}
+    </script>
+</body>
+</html>
